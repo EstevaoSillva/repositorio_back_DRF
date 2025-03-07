@@ -15,7 +15,7 @@ DEBUG = True
 
 ALLOWED_HOSTS = [
     '192.168.100.87',
-    '10.31.3.28', 
+    '10.31.2.141', 
     'localhost', 
     '127.0.0.1', 
     '192.168.100.116', 
@@ -83,21 +83,29 @@ DATABASES = {
     }
 }
 
-# Password validation
+# # Password validation
+# AUTH_PASSWORD_VALIDATORS = [
+#     {
+#         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+#     },
+#     {
+#         'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+#     },
+#     {
+#         'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+#     },
+#     {
+#         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+#     },
+# ]
+
+# Custom password validator
 AUTH_PASSWORD_VALIDATORS = [
     {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+        'NAME': 'core.validators.CustomPasswordValidator',  
     },
 ]
+
 
 # Internationalization
 LANGUAGE_CODE = 'en-us'
@@ -123,9 +131,10 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:8000",  # Django
     "http://localhost:3000",    # React
     "http://192.168.100.87:8000", # Ip de casa
-    "http://10.31.3.28:8000", # ip escola
+    "http://10.31.2.141:8000", # ip escola
     "http://192.168.100.116:39875", # ip Celular casa
     "http://10.31.3.11:46331", # Celular ip escola
+    "http://localhost:63449",  # Permite requisições do seu aplicativo Flutter
 ]
 
 CORS_ALLOW_ALL_ORIGINS = True  # Libera acesso de qualquer origem

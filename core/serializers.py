@@ -23,6 +23,12 @@ Usuario = get_user_model()
 class UsuarioCadastroSerializer(serializers.ModelSerializer):
     """
     Serializer para registro de usuário com confirmação de senha.
+
+    Campos:
+        username (str): Nome de usuário do novo usuário.
+        email (str): Email do novo usuário.
+        password (str): Senha do novo usuário.
+        confirmacao_senha (str): Confirmação da senha do novo usuário.
     """
 
     confirmacao_senha = serializers.CharField(write_only=True, required=True)
@@ -63,7 +69,7 @@ class UsuarioCadastroSerializer(serializers.ModelSerializer):
         """
         Cria o usuário corretamente, removendo a confirmação de senha.
         """
-        validated_data.pop('confirmacao_senha')  # Remove antes de criar o usuário
+        validated_data.pop('confirmacao_senha')  
         return Usuario.objects.create_user(**validated_data)
         
 class VeiculoSerializer(serializers.ModelSerializer):

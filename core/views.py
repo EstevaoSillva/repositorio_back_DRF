@@ -38,7 +38,7 @@ class UserInfoView(APIView):
         user_data = {
             'id': user.id,
             'email': user.email,
-            'Nome': user.username,  
+            'nome': user.username,  
         }
         return Response(user_data)
 
