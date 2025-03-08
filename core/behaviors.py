@@ -296,23 +296,6 @@ class AbastecimentoBehavior:
         total_anterior = ultimo_abastecimento.total_gasto_abastecimento if ultimo_abastecimento else Decimal('0.00')
         return total_anterior + Decimal(str(total_pago))
 
-    # @staticmethod
-    # def calcular_total_gasto_abastecimento(novo_preco_total, veiculo):
-    #     """
-    #     Soma o último valor de total_gasto_abastecimento com o novo preco_total.
-    #     """
-    #     from core.models import Abastecimento
-
-    #     # Obtem o último registro do mesmo veículo, ordenado por ID
-    #     ultimo_abastecimento = Abastecimento.objects.filter(veiculo=veiculo).order_by('-id').first()
-    #     logger.debug(f"Último abastecimento encontrado de calcular_total_gasto_abastecimento: {ultimo_abastecimento}")
-
-    #     # Se não houver registros anteriores, retorna apenas o novo valor
-    #     total_anterior = ultimo_abastecimento.total_gasto_abastecimento if ultimo_abastecimento else Decimal('0.00')
-    #     total_gasto = total_anterior + Decimal(str(novo_preco_total))
-    #     # Soma o valor anterior com o novo preco_total
-    #     return total_gasto
-
 class TrocaDeOleoBehavior:
 
     @staticmethod
