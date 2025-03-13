@@ -40,7 +40,7 @@ class Usuario(AbstractUser):
     REQUIRED_FIELDS = ['username', 'telefone']
 
     def __str__(self):
-        return f"{self.username})"
+        return f"{self.username}"
 
 class Veiculo(ModelBase):
     """

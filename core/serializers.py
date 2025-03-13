@@ -139,9 +139,19 @@ class VeiculoSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         """Cria o veículo associado ao usuário autenticado."""
-        # Substituir `usuario_id` pelo usuário autenticado
-        validated_data['usuario'] = self.context['request'].user
-        return Veiculo.objects.create(**validated_data)
+
+        usuario = self.context['request'].user # Obtém o usuário autenticado
+        veiculo = Veiculo.objects.create(**validated_data) # Cria o veículo
+
+        # Criar hodômetro inicial
+        HodometroBehavior.inicializar_hodometro(
+            usuario=usuario, # Usuário autenticado
+            veiculo=veiculo, # Veículo criado
+            hodometro=0,  # Hodômetro inicial
+            hodometro_diferenca=0 # Diferença inicial
+        )
+
+        return veiculo
 
     def update_is_deleted(self, veiculo, is_deleted):
         """Desativa o veículo (soft delete)"""
@@ -217,7 +227,6 @@ class HodometroSerializer(serializers.ModelSerializer):
         if ultimo_registro:
             hodometro_diferenca = HodometroBehavior.calcular_diferenca(veiculo, hodometro)
 
-        # Usando o HodometroBehavior
         return HodometroBehavior.inicializar_hodometro(
             usuario=usuario,
             veiculo=veiculo,
