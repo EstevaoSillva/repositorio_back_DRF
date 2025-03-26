@@ -1,0 +1,338 @@
+[
+    {
+        "marca": "Chevrolet",
+        "modelo": "Onix",
+        "capacidade_tanque": 44,
+        "id": 1
+    },
+    {
+        "marca": "Chevrolet",
+        "modelo": "S10",
+        "capacidade_tanque": 76,
+        "id": 2
+    },
+    {
+        "marca": "Chevrolet",
+        "modelo": "Cruze",
+        "capacidade_tanque": 52,
+        "id": 3
+    },
+    {
+        "marca": "Chevrolet",
+        "modelo": "Tracker",
+        "capacidade_tanque": 44,
+        "id": 4
+    },
+    {
+        "marca": "Chevrolet",
+        "modelo": "Spin",
+        "capacidade_tanque": 53,
+        "id": 5
+    },
+    {
+        "marca": "Chevrolet",
+        "modelo": "Prisma",
+        "capacidade_tanque": 54,
+        "id": 6
+    },
+    {
+        "marca": "Chevrolet",
+        "modelo": "Montana",
+        "capacidade_tanque": 56,
+        "id": 7
+    },
+    {
+        "marca": "Chevrolet",
+        "modelo": "Equinox",
+        "capacidade_tanque": 59,
+        "id": 8
+    },
+    {
+        "marca": "Chevrolet",
+        "modelo": "Trailblazer",
+        "capacidade_tanque": 73,
+        "id": 9
+    },
+    {
+        "marca": "Chevrolet",
+        "modelo": "Cobalt",
+        "capacidade_tanque": 54,
+        "id": 10
+    },
+    {
+        "marca": "Chevrolet",
+        "modelo": "Sonic",
+        "capacidade_tanque": 46,
+        "id": 11
+    },
+    {
+        "marca": "Chevrolet",
+        "modelo": "Captiva",
+        "capacidade_tanque": 65,
+        "id": 12
+    },
+    {
+        "marca": "Chevrolet",
+        "modelo": "Agile",
+        "capacidade_tanque": 54,
+        "id": 13
+    },
+    {
+        "marca": "Fiat",
+        "modelo": "Toro",
+        "capacidade_tanque": 60,
+        "id": 14
+    },
+    {
+        "marca": "Fiat",
+        "modelo": "Argo",
+        "capacidade_tanque": 48,
+        "id": 15
+    },
+    {
+        "marca": "Fiat",
+        "modelo": "Strada",
+        "capacidade_tanque": 55,
+        "id": 16
+    },
+    {
+        "marca": "Fiat",
+        "modelo": "Mobi",
+        "capacidade_tanque": 47,
+        "id": 17
+    },
+    {
+        "marca": "Fiat",
+        "modelo": "Cronos",
+        "capacidade_tanque": 48,
+        "id": 18
+    },
+    {
+        "marca": "Fiat",
+        "modelo": "Pulse",
+        "capacidade_tanque": 47,
+        "id": 19
+    },
+    {
+        "marca": "Fiat",
+        "modelo": "Grand Siena",
+        "capacidade_tanque": 52,
+        "id": 20
+    },
+    {
+        "marca": "Fiat",
+        "modelo": "Punto",
+        "capacidade_tanque": 60,
+        "id": 21
+    },
+    {
+        "marca": "Fiat",
+        "modelo": "Bravo",
+        "capacidade_tanque": 57,
+        "id": 22
+    },
+    {
+        "marca": "Fiat",
+        "modelo": "Linea",
+        "capacidade_tanque": 60,
+        "id": 23
+    },
+    {
+        "marca": "Fiat",
+        "modelo": "Palio Weekend",
+        "capacidade_tanque": 51,
+        "id": 24
+    },
+    {
+        "marca": "Fiat",
+        "modelo": "Idea",
+        "capacidade_tanque": 48,
+        "id": 25
+    },
+    {
+        "marca": "Fiat",
+        "modelo": "Doblò",
+        "capacidade_tanque": 60,
+        "id": 26
+    },
+    {
+        "marca": "Fiat",
+        "modelo": "Freemont",
+        "capacidade_tanque": 77,
+        "id": 27
+    },
+    {
+        "marca": "Fiat",
+        "modelo": "500",
+        "capacidade_tanque": 35,
+        "id": 28
+    },
+    {
+        "marca": "Fiat",
+        "modelo": "500X",
+        "capacidade_tanque": 48,
+        "id": 29
+    },
+    {
+        "marca": "Fiat",
+        "modelo": "Tipo",
+        "capacidade_tanque": 50,
+        "id": 30
+    },
+    {
+        "marca": "Fiat",
+        "modelo": "Palio",
+        "capacidade_tanque": 48,
+        "id": 31
+    },
+    {
+        "marca": "Honda",
+        "modelo": "Civic",
+        "capacidade_tanque": 47,
+        "id": 32
+    },
+    {
+        "marca": "Honda",
+        "modelo": "HR-V",
+        "capacidade_tanque": 50,
+        "id": 33
+    },
+    {
+        "marca": "Honda",
+        "modelo": "Fit",
+        "capacidade_tanque": 46,
+        "id": 34
+    },
+    {
+        "marca": "Honda",
+        "modelo": "City",
+        "capacidade_tanque": 48,
+        "id": 35
+    },
+    {
+        "marca": "Honda",
+        "modelo": "WR-V",
+        "capacidade_tanque": 45,
+        "id": 36
+    },
+    {
+        "marca": "Honda",
+        "modelo": "CR-V",
+        "capacidade_tanque": 57,
+        "id": 37
+    },
+    {
+        "marca": "Honda",
+        "modelo": "Accord",
+        "capacidade_tanque": 56,
+        "id": 38
+    },
+    {
+        "marca": "Honda",
+        "modelo": "Pilot",
+        "capacidade_tanque": 73,
+        "id": 39
+    },
+    {
+        "marca": "Honda",
+        "modelo": "Insight",
+        "capacidade_tanque": 40,
+        "id": 40
+    },
+    {
+        "marca": "Honda",
+        "modelo": "Clarity",
+        "capacidade_tanque": 48,
+        "id": 41
+    },
+    {
+        "marca": "Honda",
+        "modelo": "e",
+        "capacidade_tanque": 35,
+        "id": 42
+    },
+    {
+        "marca": "Volkswagen",
+        "modelo": "Gol",
+        "capacidade_tanque": 55,
+        "id": 43
+    },
+    {
+        "marca": "Volkswagen",
+        "modelo": "Amarok",
+        "capacidade_tanque": 80,
+        "id": 44
+    },
+    {
+        "marca": "Volkswagen",
+        "modelo": "Polo",
+        "capacidade_tanque": 52,
+        "id": 45
+    },
+    {
+        "marca": "Volkswagen",
+        "modelo": "T-Cross",
+        "capacidade_tanque": 52,
+        "id": 46
+    },
+    {
+        "marca": "Volkswagen",
+        "modelo": "Virtus",
+        "capacidade_tanque": 52,
+        "id": 47
+    },
+    {
+        "marca": "Volkswagen",
+        "modelo": "Nivus",
+        "capacidade_tanque": 52,
+        "id": 48
+    },
+    {
+        "marca": "Volkswagen",
+        "modelo": "Taos",
+        "capacidade_tanque": 50,
+        "id": 49
+    },
+    {
+        "marca": "Volkswagen",
+        "modelo": "Saveiro",
+        "capacidade_tanque": 55,
+        "id": 50
+    },
+    {
+        "marca": "Volkswagen",
+        "modelo": "Voyage",
+        "capacidade_tanque": 55,
+        "id": 51
+    },
+    {
+        "marca": "Volkswagen",
+        "modelo": "Jetta",
+        "capacidade_tanque": 50,
+        "id": 52
+    },
+    {
+        "marca": "Volkswagen",
+        "modelo": "Golf",
+        "capacidade_tanque": 51,
+        "id": 53
+    },
+    {
+        "marca": "Volkswagen",
+        "modelo": "Passat",
+        "capacidade_tanque": 66,
+        "id": 54
+    },
+    {
+        "marca": "Volkswagen",
+        "modelo": "Tiguan",
+        "capacidade_tanque": 60,
+        "id": 55
+    },
+    {
+        "marca": "Volkswagen",
+        "modelo": "Up!",
+        "capacidade_tanque": 50,
+        "id": 56
+    }
+]

@@ -1,6 +1,6 @@
 from django_filters import rest_framework as filters
 from django_filters import NumberFilter, RangeFilter, OrderingFilter
-from core.models import Usuario, Veiculo, Hodometro, Abastecimento
+from core.models import Usuario, Veiculo, Hodometro, Abastecimento, TrocaDeOleo
 
 class UsuarioFilter(filters.FilterSet):
     username = filters.CharFilter(lookup_expr='icontains', label='Nome')
@@ -53,3 +53,16 @@ class AbastecimentoFilter(filters.FilterSet):
     class Meta:
         model = Abastecimento
         fields = ['veiculo', 'data_abastecimento']
+
+class TrocaDeOleoFilter(filters.FilterSet):
+    """
+    Filtros para o modelo TrocaDeOleo.
+    """
+    data_troca_min = filters.DateFilter(field_name='data_troca', lookup_expr='gte')
+    data_troca_max = filters.DateFilter(field_name='data_troca', lookup_expr='lte')
+    tipo_oleo = filters.CharFilter(field_name='tipo_oleo', lookup_expr='icontains')
+    veiculo = filters.NumberFilter(field_name='veiculo__id')
+
+    class Meta:
+        model = TrocaDeOleo
+        fields = ['data_troca_min', 'data_troca_max', 'tipo_oleo', 'veiculo']

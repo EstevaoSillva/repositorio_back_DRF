@@ -4,6 +4,9 @@ from django.db import models
 from django.conf import settings
 from decimal import Decimal
 from django.utils import timezone
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+from django.db.models import UniqueConstraint
 
 import logging
 
@@ -52,6 +55,7 @@ class Veiculo(ModelBase):
     modelo = models.CharField(max_length=255, db_column='modelo', verbose_name='Modelo')
     cor = models.CharField(max_length=255, db_column='cor', verbose_name='Cor')
     ano = models.IntegerField(db_column='ano', verbose_name='Ano')
+    capacidade_tanque = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='Capacidade do Tanque', db_column='capacidade_tanque')
     is_deleted = models.BooleanField(db_column='is_deleted', default=False, null=False)
 
     class Meta:
@@ -60,6 +64,55 @@ class Veiculo(ModelBase):
 
     def __str__(self):
         return f"ID:{self.id} - Modelo: {self.modelo} - Placa: {self.placa} - Usuário: {self.usuario}"
+
+class Servico(ModelBase):
+    """
+    Representa um serviço associado a um veículo.
+    """
+
+    veiculo = models.ForeignKey(Veiculo, on_delete=models.CASCADE, related_name='servicos', verbose_name='Veículo', db_column='veiculo_id')
+    usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='servicos', verbose_name='Usuário', db_column='usuario_id')
+    nome = models.CharField(max_length=255, verbose_name='Nome do Serviço', db_column='nome')
+    descricao = models.TextField(verbose_name='Descrição', db_column='descricao', blank=True, null=True)
+    data_agendamento = models.DateTimeField(verbose_name='Data de Agendamento', db_column='data_agendamento', null=True, blank=True)
+    concluido = models.BooleanField(default=False, verbose_name='Concluído', db_column='concluido')
+    custo = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='Custo', db_column='custo', null=True, blank=True)
+
+    class Meta:
+        db_table = 'servicos'
+        verbose_name = 'Serviço'
+        verbose_name_plural = 'Serviços'
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+
+        # Lógica de agendamento do próximo serviço
+        proxima_data = ServicoBehavior.agendar_proximo_servico(self)
+        if proxima_data:
+            # Crie um novo objeto Servico para o próximo agendamento
+            proximo_servico = Servico(
+                veiculo=self.veiculo,
+                usuario=self.usuario,
+                nome=self.nome,
+                descricao=self.descricao,
+                data_agendamento=proxima_data,
+                concluido=False,
+                custo=self.custo
+            )
+            proximo_servico.save()
+
+        # Lógica de notificação de agendamento
+        ServicoBehavior.enviar_notificacao_agendamento(self)
+
+        # Lógica de registro de histórico
+        ServicoBehavior.registrar_historico_servico(self)
+
+    @property
+    def custo_total(self):
+        return ServicoBehavior.calcular_custo_total(self)
+
+    def __str__(self):
+        return f"{self.nome} - {self.veiculo.placa}"
 
 class Hodometro(ModelBase):
     """
@@ -85,6 +138,40 @@ class Hodometro(ModelBase):
             models.Index(fields=['hodometro']),
         ]
 
+    @receiver(post_save, sender=hodometro)
+    def atualizar_registros_relacionados(sender, instance, **kwargs):
+        """
+        Atualiza os registros de manutenção e abastecimento quando o hodômetro é atualizado.
+        """
+        veiculo = instance.veiculo
+        novo_hodometro = instance.hodometro
+
+        # Atualiza as previsões de próximas trocas de óleo
+        trocas_de_oleo = TrocaDeOleo.objects.filter(veiculo=veiculo)
+        for troca in trocas_de_oleo:
+            proximo_hodometro, proxima_data = TrocaDeOleoBehavior.calcular_proxima_troca(troca)
+            if proximo_hodometro:
+                troca.proximo_hodometro = proximo_hodometro
+                troca.proxima_data = proxima_data
+                troca.save()
+
+        # Atualiza os registros de abastecimento
+        abastecimentos = Abastecimento.objects.filter(veiculo=veiculo)
+        for abastecimento in abastecimentos:
+            # Recalcula o consumo médio usando a função centralizada
+            hodometro_diferenca = HodometroBehavior.calcular_diferenca(veiculo, abastecimento.hodometro)
+            abastecimento.desempenho_veiculo = AbastecimentoBehavior.calcular_desempenho_veiculo(hodometro_diferenca, veiculo)
+            abastecimento.save()
+
+        # Atualiza outros registros de manutenção (Servico)
+        servicos = Servico.objects.filter(veiculo=veiculo)
+        for servico in servicos:
+            # Lógica para atualizar registros de manutenção, se necessário
+            # Exemplo: Atualizar custo total se depender da quilometragem
+            custo_total = ServicoBehavior.calcular_custo_total(servico)
+            servico.custo = custo_total
+            servico.save()
+
     def __str__(self):
         return f"{self.veiculo} ({self.id})"
 
@@ -92,6 +179,7 @@ class Abastecimento(ModelBase):
     """
     Representa um abastecimento registrado no sistema.
     """
+
     veiculo = models.ForeignKey(Veiculo, on_delete=models.CASCADE, related_name='abastecimentos', verbose_name='Veículo', db_column='veiculo_id')
     usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='abastecimentos', verbose_name='Usuário', db_column='usuario_id')
     hodometro = models.PositiveIntegerField(verbose_name='Hodômetro', db_column='hodometro')
@@ -102,6 +190,7 @@ class Abastecimento(ModelBase):
     preco_total = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='Preço Total', db_column='preco_total')
     data_abastecimento = models.DateTimeField(verbose_name='Data do Abastecimento', db_column='data_abastecimento')
     total_gasto_abastecimento = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
+    litros_por_dia = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'), verbose_name="Litros por Dia", db_column='litros_por_dia')
 
     class Meta:
         db_table = 'abastecimentos'
@@ -109,7 +198,7 @@ class Abastecimento(ModelBase):
         verbose_name_plural = 'Abastecimentos'
         ordering = ['data_abastecimento']
         constraints = [
-            models.UniqueConstraint(fields=['veiculo', 'data_abastecimento'], name='abastecimento_por_veiculo_e_data')
+            UniqueConstraint(fields=['veiculo', 'data_abastecimento'], name='abastecimento_por_veiculo_e_data')
         ]
 
     def __str__(self):
@@ -117,23 +206,21 @@ class Abastecimento(ModelBase):
 
     def save(self, *args, **kwargs):
         from core.behaviors import AbastecimentoBehavior
-        import logging
 
         logger = logging.getLogger(__name__)
 
         logger.debug(f"Salvando abastecimento - Veículo: {self.veiculo}")
 
-        # Calcular a diferença do hodômetro com o Behavior
-        if self.veiculo:
-            ultimo_abastecimento = Hodometro.objects.filter(veiculo=self.veiculo).order_by('-id').first()
-            logger.debug(f"Último hodômetro: {ultimo_abastecimento.hodometro if ultimo_abastecimento else 'Nenhum'}")
+        # Obter o último registro de hodômetro para o veículo
+        ultimo_hodometro = Hodometro.objects.filter(veiculo=self.veiculo).order_by('-id').first()
 
-            if ultimo_abastecimento:
-                self.hodometro_diferenca = AbastecimentoBehavior.calcular_diferenca(
-                    self.hodometro, ultimo_abastecimento.hodometro
-                )
-            else:
-                self.hodometro_diferenca = 0
+        logger.debug(f"Último hodômetro: {ultimo_hodometro.hodometro if ultimo_hodometro else 'Nenhum'}")
+
+        # Calcular a diferença do hodômetro corretamente
+        if ultimo_hodometro:
+            self.hodometro_diferenca = self.hodometro - ultimo_hodometro.hodometro
+        else:
+            self.hodometro_diferenca = 0
 
         logger.debug(f"Hodômetro diferença calculado: {self.hodometro_diferenca}")
 
@@ -143,7 +230,7 @@ class Abastecimento(ModelBase):
         if self.preco_total >= Decimal("1000.00"):
             self.preco_total = Decimal("999.99")
 
-        # Corrigido: Passando self.veiculo em vez de self.total_litros
+        # Usar a função centralizada para calcular o desempenho
         self.desempenho_veiculo = AbastecimentoBehavior.calcular_consumo_medio(self.hodometro_diferenca, self.veiculo)
         logger.debug(f"Consumo médio calculado: {self.desempenho_veiculo}")
 
@@ -153,6 +240,7 @@ class Abastecimento(ModelBase):
         )
 
         super().save(*args, **kwargs)
+
 
 class TipoOleo(models.TextChoices):
     """

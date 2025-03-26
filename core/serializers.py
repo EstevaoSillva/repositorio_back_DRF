@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
 from rest_framework.exceptions import ValidationError
+from rest_framework.fields import ChoiceField
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from django.utils import timezone
@@ -12,11 +13,15 @@ from django.contrib.auth.hashers import make_password
 from django.core.validators import EmailValidator
 from django.core.exceptions import ValidationError
 
-from core.models import Usuario, Veiculo, Hodometro, Abastecimento, TrocaDeOleo
-from core.behaviors import HodometroBehavior, AbastecimentoBehavior, TrocaDeOleoBehavior
+from core.models import (Usuario, Veiculo, Hodometro, 
+Abastecimento, TrocaDeOleo, Servico)
+from core.behaviors import (HodometroBehavior, AbastecimentoBehavior, 
+TrocaDeOleoBehavior, ServicoBehavior)
+from core.utils import carregar_veiculos
 
 from decimal import Decimal, InvalidOperation, ROUND_DOWN
 import re
+
 
 Usuario = get_user_model()
 
@@ -71,35 +76,52 @@ class UsuarioCadastroSerializer(serializers.ModelSerializer):
         """
         validated_data.pop('confirmacao_senha')  
         return Usuario.objects.create_user(**validated_data)
-        
+
+class VeiculoChoiceField(ChoiceField):
+    def __init__(self, **kwargs):
+        super().__init__(choices=self.get_veiculo_choices(), **kwargs)
+
+    def get_veiculo_choices(self):
+        veiculos = carregar_veiculos()
+        # Formata os veículos para o formato de choices do ChoiceField
+        return [(self.veiculo_to_string(veiculo), f"{veiculo['marca']} {veiculo['modelo']}") for veiculo in veiculos]
+
+    def veiculo_to_string(self, veiculo):
+        # Converte o veículo em uma string hashable
+        return f"{veiculo['marca']}-{veiculo['modelo']}"
+
+    def to_internal_value(self, data):
+        # Converte a string selecionada de volta para o objeto do veículo
+        veiculos = carregar_veiculos()
+        for veiculo in veiculos:
+            if self.veiculo_to_string(veiculo) == data:
+                return veiculo
+        self.fail('invalid_choice', input=data)
+
 class VeiculoSerializer(serializers.ModelSerializer):
 
     usuario = serializers.PrimaryKeyRelatedField(queryset=Usuario.objects.all(), required=True)
     usuario_nome = serializers.SerializerMethodField()
+    veiculo_selecionado = VeiculoChoiceField(required=False, write_only=True) 
 
     class Meta:
         model = Veiculo
         fields = [
             'id', 
+            'usuario_id',
             'usuario_nome', 
             'usuario', 
-            'marca', 
-            'modelo', 
-            'ano', 
+            'marca',
+            'modelo',
+            'capacidade_tanque',
+            'veiculo_selecionado',
+            'placa',
             'cor', 
-            'placa'
+            'ano', 
         ]
 
     def get_usuario_nome(self, obj):
         return obj.usuario.username  
-
-    def validate_marca(self, value):
-        """Valida a marca do veículo."""    
-        return value.title()
-
-    def validate_modelo(self, value):
-        """Valida o modelo do veículo."""
-        return value.title()
 
     def validate_ano(self, value):
         """Valida o ano do veículo."""
@@ -123,6 +145,31 @@ class VeiculoSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(f"A cor deve ser uma das seguintes: {', '.join(cores_validas)}.")
         return value.title()
 
+    def validate_veiculo_selecionado(self, value):
+        """Valida se o veículo selecionado está na lista disponível."""
+        try:
+            veiculos_disponiveis = carregar_veiculos()
+            if value not in veiculos_disponiveis:
+                raise serializers.ValidationError("Veículo selecionado não está na lista disponível.")
+            return value
+        except Exception as e:
+            raise serializers.ValidationError(f"Erro ao carregar veículos: {str(e)}")
+
+    def validate_litros(self, litros):
+            """Valida se o total de litros não excede a capacidade do tanque."""
+            veiculo = self.initial_data.get('veiculo')
+            if veiculo:
+                try:
+                    veiculo_obj = Veiculo.objects.get(pk=veiculo)
+                    capacidade_tanque = veiculo_obj.capacidade_tanque
+                    if litros > capacidade_tanque:
+                        raise serializers.ValidationError(
+                            f"O total de litros ({litros}) excede a capacidade do tanque ({capacidade_tanque})."
+                        )
+                except Veiculo.DoesNotExist:
+                    raise serializers.ValidationError("Veículo não encontrado.")
+            return litros
+
     def validate(self, data):
         """Valida dados gerais do veículo."""
         placa = data.get('placa')
@@ -137,21 +184,34 @@ class VeiculoSerializer(serializers.ModelSerializer):
 
         return data
 
+
     def create(self, validated_data):
-        """Cria o veículo associado ao usuário autenticado."""
-
-        usuario = self.context['request'].user # Obtém o usuário autenticado
-        veiculo = Veiculo.objects.create(**validated_data) # Cria o veículo
-
-        # Criar hodômetro inicial
-        HodometroBehavior.inicializar_hodometro(
-            usuario=usuario, # Usuário autenticado
-            veiculo=veiculo, # Veículo criado
-            hodometro=0,  # Hodômetro inicial
-            hodometro_diferenca=0 # Diferença inicial
-        )
-
-        return veiculo
+        if self.instance:
+            # Lógica para atualização (ignora veiculo_selecionado)
+            # Remove veiculo_selecionado dos validated_data se existir
+            validated_data.pop('veiculo_selecionado', None) 
+            # Atualiza o veículo existente com os dados validados
+            for attr, value in validated_data.items(): # Para cada atributo e valor no validated_data
+                setattr(self.instance, attr, value) # Atualiza o atributo do veículo
+            self.instance.save()
+            return self.instance
+        else:
+            # Lógica para criação com veiculo_selecionado
+            usuario = self.context['request'].user
+            veiculo_selecionado = validated_data.pop('veiculo_selecionado')
+            cor = validated_data.pop('cor')
+            placa = validated_data.pop('placa')
+            ano = validated_data.pop('ano')
+            veiculo = Veiculo.objects.create(
+                usuario=usuario,
+                marca=veiculo_selecionado['marca'],
+                modelo=veiculo_selecionado['modelo'],
+                ano=ano,
+                capacidade_tanque=veiculo_selecionado['capacidade_tanque'],
+                cor=cor,
+                placa=placa
+            )
+            return veiculo
 
     def update_is_deleted(self, veiculo, is_deleted):
         """Desativa o veículo (soft delete)"""
@@ -227,6 +287,7 @@ class HodometroSerializer(serializers.ModelSerializer):
         if ultimo_registro:
             hodometro_diferenca = HodometroBehavior.calcular_diferenca(veiculo, hodometro)
 
+
         return HodometroBehavior.inicializar_hodometro(
             usuario=usuario,
             veiculo=veiculo,
@@ -248,7 +309,6 @@ class HodometroSerializer(serializers.ModelSerializer):
         return instance
 
 class AbastecimentoSerializer(serializers.ModelSerializer):
-
     data_abastecimento = serializers.DateTimeField(required=False, allow_null=True, format="%d/%m/%Y - %H:%M", default=timezone.now)
     veiculo = serializers.PrimaryKeyRelatedField(queryset=Veiculo.objects.all(), required=True)
     hodometro = serializers.IntegerField(required=True)
@@ -256,6 +316,7 @@ class AbastecimentoSerializer(serializers.ModelSerializer):
     litros_por_dia = serializers.SerializerMethodField()
     km_dias = serializers.SerializerMethodField()
     total_gasto_abastecimento = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
+    sugestao_proximo_abastecimento = serializers.SerializerMethodField()
 
     class Meta:
         model = Abastecimento
@@ -263,7 +324,7 @@ class AbastecimentoSerializer(serializers.ModelSerializer):
             'id',
             'veiculo',
             'hodometro',
-            'hodometro_diferenca',  
+            'hodometro_diferenca',
             'total_litros',
             'preco_combustivel',
             'preco_total',
@@ -272,16 +333,14 @@ class AbastecimentoSerializer(serializers.ModelSerializer):
             'dias_entre_abastecimentos',
             'litros_por_dia',
             'km_dias',
-            'total_gasto_abastecimento'
+            'total_gasto_abastecimento',
+            'sugestao_proximo_abastecimento'
         ]
-
-        read_only_fields = ['preco_total', 'desempenho_veiculo', 'hodometro_diferenca', 'dias_entre_abastecimentos', 'litros_por_dia', 'km_dias', 'total_gasto_abastecimento']
-
-
+        read_only_fields = ['preco_total', 'desempenho_veiculo', 'hodometro_diferenca', 'dias_entre_abastecimentos',
+                            'litros_por_dia', 'km_dias', 'total_gasto_abastecimento', 'sugestao_proximo_abastecimento']
 
     def get_total_gasto_abastecimento(self, obj):
-            veiculo = obj.veiculo
-            return AbastecimentoBehavior.calcular_total_gasto(veiculo)
+        return AbastecimentoBehavior.calcular_total_gasto_abastecimento(obj.preco_total, obj.veiculo)
 
     def get_km_dias(self, obj):
         return AbastecimentoBehavior.km_dias(obj.hodometro_diferenca, self.get_dias_entre_abastecimentos(obj))
@@ -290,16 +349,22 @@ class AbastecimentoSerializer(serializers.ModelSerializer):
         return AbastecimentoBehavior.calcular_litros_por_dia(obj.total_litros, self.get_dias_entre_abastecimentos(obj))
 
     def get_dias_entre_abastecimentos(self, obj):
-        ultimo_abastecimento = Abastecimento.objects.filter(veiculo=obj.veiculo, id__lt=obj.id).order_by('-data_abastecimento').first()
+        ultimo_abastecimento = Abastecimento.objects.filter(veiculo=obj.veiculo, id__lt=obj.id).order_by(
+            '-data_abastecimento').first()
         if ultimo_abastecimento and obj.data_abastecimento:
-            return (obj.data_abastecimento - ultimo_abastecimento.data_abastecimento).days
+            return AbastecimentoBehavior.calcular_diferenca_dias(obj.data_abastecimento,
+                                                                 ultimo_abastecimento.data_abastecimento)
         return None
+
+    def get_sugestao_proximo_abastecimento(self, obj):
+        return AbastecimentoBehavior.sugerir_novo_abastecimento(obj.veiculo)
 
     def validate(self, data):
         veiculo = data.get('veiculo')
         novo_hodometro = data.get('hodometro')
         data_abastecimento = data.get('data_abastecimento')
-        
+        # self.validate_litros(data.get('total_litros'))
+
         # Obter o último registro de hodômetro
         ultimo_hodometro = Hodometro.objects.filter(veiculo=veiculo).order_by('-id').first()
         ultimo_valor_hodometro = ultimo_hodometro.hodometro if ultimo_hodometro else 0
@@ -310,7 +375,7 @@ class AbastecimentoSerializer(serializers.ModelSerializer):
                 "hodometro": f"O valor do hodômetro ({novo_hodometro}) não pode ser menor que o último registrado ({ultimo_valor_hodometro})."
             })
 
-         # Validação de data futura
+        # Validação de data futura
         if data_abastecimento and data_abastecimento > timezone.now():
             raise serializers.ValidationError({
                 "data_abastecimento": "Não é permitido registrar abastecimentos com datas futuras."
@@ -333,25 +398,20 @@ class AbastecimentoSerializer(serializers.ModelSerializer):
         preco_combustivel = validated_data['preco_combustivel']
         usuario = self.context['request'].user
         hodometro = validated_data['hodometro']
-
-        # Obter o último registro de hodômetro do veículo
-        ultimo_hodometro = Hodometro.objects.filter(veiculo=veiculo).order_by('-id').first()
-        ultimo_valor_hodometro = ultimo_hodometro.hodometro if ultimo_hodometro else 0
-
-        # Novo valor do hodômetro fornecido
-        novo_hodometro = validated_data.get('hodometro', ultimo_valor_hodometro)
+        print(f"Veículo: {veiculo}")
+        print(f"Total de litros: {total_litros}")
+        print(f"Preço do combustível: {preco_combustivel}")
+        print(f"Usuário: {usuario}")
+        print(f"Hodômetro: {hodometro}")
 
         # Calcular a diferença do hodômetro com o Behavior para o abastecimento
-        abast_hodometro_diferenca = AbastecimentoBehavior.calcular_diferenca(novo_hodometro, ultimo_valor_hodometro)
-        ultimo_registro = Hodometro.objects.filter(veiculo=veiculo).order_by('-hodometro').first()
-        hodometro_diferenca = None
-        if ultimo_registro:
-            hodometro_diferenca = HodometroBehavior.calcular_diferenca(veiculo, hodometro)
+        abast_hodometro_diferenca = AbastecimentoBehavior.calcular_diferenca_hodometro(veiculo, hodometro)
+
+        # Calcular a diferença de hodômetro com o Behavior de Hodometro
+        new_hodometro_diferenca = HodometroBehavior.calcular_diferenca(veiculo, hodometro)
+
         # Calcular o preço total com o Behavior
         preco_total = AbastecimentoBehavior.calcular_preco_total(total_litros, preco_combustivel)
-
-        if hodometro is None:
-            hodometro = 0
 
         # Criar o registro do abastecimento
         abastecimento = Abastecimento.objects.create(
@@ -360,25 +420,24 @@ class AbastecimentoSerializer(serializers.ModelSerializer):
             hodometro=hodometro,
             preco_combustivel=preco_combustivel,
             preco_total=preco_total,
-            hodometro_diferenca=abast_hodometro_diferenca,  
+            hodometro_diferenca=abast_hodometro_diferenca,
             data_abastecimento=validated_data.get('data_abastecimento', timezone.now()),
             usuario=usuario
         )
 
         # Criar o novo registro de Hodômetro
-        if novo_hodometro is not None:
-            Hodometro.objects.create(
-                veiculo=veiculo,
-                hodometro=novo_hodometro,
-                hodometro_diferenca=hodometro_diferenca,  
-                usuario=usuario
-            )
+        Hodometro.objects.create(
+            veiculo=veiculo,
+            hodometro=hodometro,
+            hodometro_diferenca=new_hodometro_diferenca,
+            usuario=usuario
+        )
 
         return abastecimento
 
-
     def update(self, instance, validated_data):
         veiculo = validated_data.get('veiculo', instance.veiculo)
+        novo_hodometro = validated_data.pop('hodometro', instance.hodometro)
         total_litros = validated_data.get('total_litros', instance.total_litros)
         preco_combustivel = validated_data.get('preco_combustivel', instance.preco_combustivel)
         usuario = self.context['request'].user
@@ -388,9 +447,6 @@ class AbastecimentoSerializer(serializers.ModelSerializer):
         ultimo_hodometro = Hodometro.objects.filter(veiculo=veiculo).order_by('-id').first()
         ultimo_valor_hodometro = ultimo_hodometro.hodometro if ultimo_hodometro else 0
 
-        # Novo valor do hodômetro fornecido
-        novo_hodometro = validated_data.pop('hodometro', instance.hodometro)
-
         if novo_hodometro != instance.hodometro:
             # Validar o novo hodômetro com o Behavior
             if not HodometroBehavior.validar_hodometro(ultimo_valor_hodometro, novo_hodometro):
@@ -399,57 +455,121 @@ class AbastecimentoSerializer(serializers.ModelSerializer):
                 })
 
             # Calcular a diferença do hodômetro com o Behavior
-            hodometro_diferenca = HodometroBehavior.calcular_diferenca(ultimo_valor_hodometro, novo_hodometro)
+            hodometro_diferenca = AbastecimentoBehavior.calcular_diferenca_hodometro(veiculo, novo_hodometro)
 
-            ultimo_registro = Hodometro.objects.filter(veiculo=veiculo).order_by('-hodometro').first()
-            hodometro_diferenca = None
-            if ultimo_registro:
-                hodometro_diferenca = HodometroBehavior.calcular_diferenca(veiculo, hodometro)
+            # Calcular a diferença de hodômetro com o Behavior de Hodometro
+            new_hodometro_diferenca = HodometroBehavior.calcular_diferenca(veiculo, hodometro)
 
             # Criar um novo registro de Hodômetro
             Hodometro.objects.create(
                 veiculo=veiculo,
                 hodometro=novo_hodometro,
-                hodometro_diferenca=hodometro_diferenca,
+                hodometro_diferenca=new_hodometro_diferenca,
                 usuario=usuario
             )
 
             # Atualizar o campo de diferença no abastecimento
             instance.hodometro_diferenca = hodometro_diferenca
+            instance.save()
 
-        # Atualizar os outros campos
-        instance.total_litros = total_litros
-        instance.preco_combustivel = preco_combustivel
-        instance.preco_total = AbastecimentoBehavior.calcular_preco_total(total_litros, preco_combustivel)
-        instance.save()
-
-        return instance
+        return instance 
 
 class TrocaDeOleoSerializer(serializers.ModelSerializer):
+    """
+    Serializer para o modelo TrocaDeOleo.
+    """
+
     proximo_hodometro = serializers.SerializerMethodField()
     proxima_data = serializers.SerializerMethodField()
-    alertas = serializers.SerializerMethodField()
 
     class Meta:
         model = TrocaDeOleo
-        fields = ['id', 'usuario', 'veiculo', 'hodometro', 'tipo_oleo', 'data_troca', 'proximo_hodometro', 'proxima_data', 'alertas']
+        fields = [
+            'id',
+            'veiculo',
+            'usuario',
+            'hodometro',
+            'tipo_oleo',
+            'data_troca',
+            'proximo_hodometro',
+            'proxima_data',
+        ]
+        read_only_fields = ['proximo_hodometro', 'proxima_data']
 
     def get_proximo_hodometro(self, obj):
-        """
-        Retorna a quilometragem prevista para a próxima troca.
-        """
         proximo_hodometro, _ = TrocaDeOleoBehavior.calcular_proxima_troca(obj)
         return proximo_hodometro
 
     def get_proxima_data(self, obj):
-        """
-        Retorna a data prevista para a próxima troca.
-        """
         _, proxima_data = TrocaDeOleoBehavior.calcular_proxima_troca(obj)
         return proxima_data
 
-    def get_alertas(self, obj):
-        """
-        Retorna os alertas para a próxima troca de óleo.
-        """
-        return TrocaDeOleoBehavior.verificar_alertas(obj.veiculo, obj.hodometro)
+    def create(self, validated_data):
+        """Cria um novo registro de troca de óleo."""
+        troca = TrocaDeOleo.objects.create(**validated_data)
+        return troca
+
+    def update(self, instance, validated_data):
+        """Atualiza um registro de troca de óleo existente."""
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        return instance
+
+class ServicoSerializer(serializers.ModelSerializer):
+    """
+    Serializer para o modelo Servico.
+    """
+
+    usuario_nome = serializers.SerializerMethodField()
+    veiculo_placa = serializers.SerializerMethodField()
+    custo_total = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Servico
+        fields = [
+            'id',
+            'veiculo',
+            'veiculo_placa',
+            'usuario',
+            'usuario_nome',
+            'nome',
+            'descricao',
+            'data_agendamento',
+            'concluido',
+            'custo',
+            'custo_total',
+        ]
+        read_only_fields = ['custo_total']
+
+    def get_usuario_nome(self, obj):
+        return obj.usuario.username
+
+    def get_veiculo_placa(self, obj):
+        return obj.veiculo.placa
+
+    def get_custo_total(self, obj):
+        return ServicoBehavior.calcular_custo_total(obj)
+
+    def validate_nome(self, value):
+        """Valida o nome do serviço."""
+        return value.title()
+
+    def validate(self, data):
+        """Valida dados gerais do serviço."""
+        # Adicione validações adicionais conforme necessário
+        return data
+
+    def create(self, validated_data):
+        """Cria um novo serviço."""
+        servico = Servico.objects.create(**validated_data)
+        ServicoBehavior.enviar_notificacao_agendamento(servico)
+        ServicoBehavior.registrar_historico_servico(servico)
+        return servico
+
+    def update(self, instance, validated_data):
+        """Atualiza um serviço existente."""
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        return instance

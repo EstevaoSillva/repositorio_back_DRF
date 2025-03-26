@@ -1,0 +1,338 @@
+[
+    {
+        "marca": "Chevrolet",
+        "modelo": "Onix",
+        "capacidade_tanque": 44,
+        "ano": 2022
+    },
+    {
+        "marca": "Chevrolet",
+        "modelo": "S10",
+        "capacidade_tanque": 76,
+        "ano": 2004
+    },
+    {
+        "marca": "Chevrolet",
+        "modelo": "Cruze",
+        "capacidade_tanque": 52,
+        "ano": 2014
+    },
+    {
+        "marca": "Chevrolet",
+        "modelo": "Tracker",
+        "capacidade_tanque": 44,
+        "ano": 2022
+    },
+    {
+        "marca": "Chevrolet",
+        "modelo": "Spin",
+        "capacidade_tanque": 53,
+        "ano": 2021
+    },
+    {
+        "marca": "Chevrolet",
+        "modelo": "Prisma",
+        "capacidade_tanque": 54,
+        "ano": 2010
+    },
+    {
+        "marca": "Chevrolet",
+        "modelo": "Montana",
+        "capacidade_tanque": 56,
+        "ano": 2010
+    },
+    {
+        "marca": "Chevrolet",
+        "modelo": "Equinox",
+        "capacidade_tanque": 59,
+        "ano": 2024
+    },
+    {
+        "marca": "Chevrolet",
+        "modelo": "Trailblazer",
+        "capacidade_tanque": 73,
+        "ano": 2015
+    },
+    {
+        "marca": "Chevrolet",
+        "modelo": "Cobalt",
+        "capacidade_tanque": 54,
+        "ano": 2000
+    },
+    {
+        "marca": "Chevrolet",
+        "modelo": "Sonic",
+        "capacidade_tanque": 46,
+        "ano": 2001
+    },
+    {
+        "marca": "Chevrolet",
+        "modelo": "Captiva",
+        "capacidade_tanque": 65,
+        "ano": 2015
+    },
+    {
+        "marca": "Chevrolet",
+        "modelo": "Agile",
+        "capacidade_tanque": 54,
+        "ano": 2013
+    },
+    {
+        "marca": "Fiat",
+        "modelo": "Toro",
+        "capacidade_tanque": 60,
+        "ano": 2022
+    },
+    {
+        "marca": "Fiat",
+        "modelo": "Argo",
+        "capacidade_tanque": 48,
+        "ano": 2012
+    },
+    {
+        "marca": "Fiat",
+        "modelo": "Strada",
+        "capacidade_tanque": 55,
+        "ano": 2023
+    },
+    {
+        "marca": "Fiat",
+        "modelo": "Mobi",
+        "capacidade_tanque": 47,
+        "ano": 2017
+    },
+    {
+        "marca": "Fiat",
+        "modelo": "Cronos",
+        "capacidade_tanque": 48,
+        "ano": 2009
+    },
+    {
+        "marca": "Fiat",
+        "modelo": "Pulse",
+        "capacidade_tanque": 47,
+        "ano": 2018
+    },
+    {
+        "marca": "Fiat",
+        "modelo": "Grand Siena",
+        "capacidade_tanque": 52,
+        "ano": 2021
+    },
+    {
+        "marca": "Fiat",
+        "modelo": "Punto",
+        "capacidade_tanque": 60,
+        "ano": 2007
+    },
+    {
+        "marca": "Fiat",
+        "modelo": "Bravo",
+        "capacidade_tanque": 57,
+        "ano": 2011
+    },
+    {
+        "marca": "Fiat",
+        "modelo": "Linea",
+        "capacidade_tanque": 60,
+        "ano": 2013
+    },
+    {
+        "marca": "Fiat",
+        "modelo": "Palio Weekend",
+        "capacidade_tanque": 51,
+        "ano": 2015
+    },
+    {
+        "marca": "Fiat",
+        "modelo": "Idea",
+        "capacidade_tanque": 48,
+        "ano": 2008
+    },
+    {
+        "marca": "Fiat",
+        "modelo": "Doblò",
+        "capacidade_tanque": 60,
+        "ano": 2012
+    },
+    {
+        "marca": "Fiat",
+        "modelo": "Freemont",
+        "capacidade_tanque": 77,
+        "ano": 2018
+    },
+    {
+        "marca": "Fiat",
+        "modelo": "500",
+        "capacidade_tanque": 35,
+        "ano": 2004
+    },
+    {
+        "marca": "Fiat",
+        "modelo": "500X",
+        "capacidade_tanque": 48,
+        "ano": 2007
+    },
+    {
+        "marca": "Fiat",
+        "modelo": "Tipo",
+        "capacidade_tanque": 50,
+        "ano": 2009
+    },
+    {
+        "marca": "Fiat",
+        "modelo": "Palio",
+        "capacidade_tanque": 48,
+        "ano": 2020
+    },
+    {
+        "marca": "Honda",
+        "modelo": "Civic",
+        "capacidade_tanque": 47,
+        "ano": 2003
+    },
+    {
+        "marca": "Honda",
+        "modelo": "HR-V",
+        "capacidade_tanque": 50,
+        "ano": 2010
+    },
+    {
+        "marca": "Honda",
+        "modelo": "Fit",
+        "capacidade_tanque": 46,
+        "ano": 2003
+    },
+    {
+        "marca": "Honda",
+        "modelo": "City",
+        "capacidade_tanque": 48,
+        "ano": 2003
+    },
+    {
+        "marca": "Honda",
+        "modelo": "WR-V",
+        "capacidade_tanque": 45,
+        "ano": 2016
+    },
+    {
+        "marca": "Honda",
+        "modelo": "CR-V",
+        "capacidade_tanque": 57,
+        "ano": 2011
+    },
+    {
+        "marca": "Honda",
+        "modelo": "Accord",
+        "capacidade_tanque": 56,
+        "ano": 2020
+    },
+    {
+        "marca": "Honda",
+        "modelo": "Pilot",
+        "capacidade_tanque": 73,
+        "ano": 2004
+    },
+    {
+        "marca": "Honda",
+        "modelo": "Insight",
+        "capacidade_tanque": 40,
+        "ano": 2007
+    },
+    {
+        "marca": "Honda",
+        "modelo": "Clarity",
+        "capacidade_tanque": 48,
+        "ano": 2018
+    },
+    {
+        "marca": "Honda",
+        "modelo": "e",
+        "capacidade_tanque": 35,
+        "ano": 2017
+    },
+    {
+        "marca": "Volkswagen",
+        "modelo": "Gol",
+        "capacidade_tanque": 55,
+        "ano": 2011
+    },
+    {
+        "marca": "Volkswagen",
+        "modelo": "Amarok",
+        "capacidade_tanque": 80,
+        "ano": 2006
+    },
+    {
+        "marca": "Volkswagen",
+        "modelo": "Polo",
+        "capacidade_tanque": 52,
+        "ano": 2019
+    },
+    {
+        "marca": "Volkswagen",
+        "modelo": "T-Cross",
+        "capacidade_tanque": 52,
+        "ano": 2019
+    },
+    {
+        "marca": "Volkswagen",
+        "modelo": "Virtus",
+        "capacidade_tanque": 52,
+        "ano": 2006
+    },
+    {
+        "marca": "Volkswagen",
+        "modelo": "Nivus",
+        "capacidade_tanque": 52,
+        "ano": 2015
+    },
+    {
+        "marca": "Volkswagen",
+        "modelo": "Taos",
+        "capacidade_tanque": 50,
+        "ano": 2013
+    },
+    {
+        "marca": "Volkswagen",
+        "modelo": "Saveiro",
+        "capacidade_tanque": 55,
+        "ano": 2010
+    },
+    {
+        "marca": "Volkswagen",
+        "modelo": "Voyage",
+        "capacidade_tanque": 55,
+        "ano": 2012
+    },
+    {
+        "marca": "Volkswagen",
+        "modelo": "Jetta",
+        "capacidade_tanque": 50,
+        "ano": 2010
+    },
+    {
+        "marca": "Volkswagen",
+        "modelo": "Golf",
+        "capacidade_tanque": 51,
+        "ano": 2015
+    },
+    {
+        "marca": "Volkswagen",
+        "modelo": "Passat",
+        "capacidade_tanque": 66,
+        "ano": 2004
+    },
+    {
+        "marca": "Volkswagen",
+        "modelo": "Tiguan",
+        "capacidade_tanque": 60,
+        "ano": 2003
+    },
+    {
+        "marca": "Volkswagen",
+        "modelo": "Up!",
+        "capacidade_tanque": 50,
+        "ano": 2015
+    }
+]

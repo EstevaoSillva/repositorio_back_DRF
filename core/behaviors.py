@@ -12,7 +12,7 @@ from rest_framework import status
 from decimal import Decimal, ROUND_DOWN
 from datetime import timedelta, datetime
 
-from core.models import Hodometro, Abastecimento, Veiculo, TrocaDeOleo, TipoOleo
+from core.models import Hodometro, Abastecimento, Veiculo, TrocaDeOleo, TipoOleo, Servico
 
 import logging
 
@@ -29,13 +29,17 @@ class HodometroBehavior:
 
     @staticmethod
     def calcular_diferenca(veiculo, hodometro_atual):
+
         # Obtendo o primeiro registro de hodômetro do veículo
         registro_inicial = Hodometro.objects.filter(veiculo=veiculo).order_by('id').first()
         hodometro_inicial = registro_inicial.hodometro if registro_inicial else 0
+        print(f"Registro inicial: {registro_inicial}")
+        print(f"Hodômetro inicial: {hodometro_inicial}")
 
         # Convertendo os valores para Decimal antes de realizar a subtração
         hodometro_atual = Decimal(str(hodometro_atual)) if not isinstance(hodometro_atual, (int, float, Decimal)) else hodometro_atual
         hodometro_inicial = Decimal(str(hodometro_inicial)) if not isinstance(hodometro_inicial, (int, float, Decimal)) else hodometro_inicial
+        print(f"Valores convertidos para Decimal: hodometro_atual={hodometro_atual}, hodometro_inicial={hodometro_inicial}")
 
         # Garantindo que os valores sejam do tipo correto
         if not isinstance(hodometro_atual, (int, float, Decimal)):
@@ -110,99 +114,31 @@ class AbastecimentoBehavior:
     """
 
     @staticmethod
-    def inicializar_abastecimento(abastecimento_atual, veiculo):
+    def calcular_diferenca_hodometro(veiculo, novo_hodometro):
         """
-        Inicializa o abastecimento e calcula a diferença com base no último registro.
+        Calcula a diferença do hodômetro com base no último registro.
         """
-        if not isinstance(abastecimento_atual, int, float):
-            raise ValueError("O abastecimento atual deve ser um valor inteiro.")
 
-        abastecimento_anterior = AbastecimentoBehavior.obter_valor_ultimo_abastecimento(veiculo)
-        abastecimento_diferenca = AbastecimentoBehavior.calcular_diferenca(abastecimento_anterior, abastecimento_atual) if abastecimento_anterior else None
-
-        return abastecimento_atual, abastecimento_diferenca
-
-    @staticmethod
-    def processar_abastecimento(instance, abastecimento_atual, preco_litro, total_pago, data_abastecimento):
-        """
-        Processa e calcula todos os dados do abastecimento a partir do segundo registro.
-        """
-        if abastecimento_atual < instance.hodometro:
-            raise ValueError("A quilometragem atual não pode ser menor que a anterior.")
-
-        ultimo_abastecimento = AbastecimentoBehavior.obter_ultimo_abastecimento(instance.veiculo)
-        if not ultimo_abastecimento:
-            instance.hodometro = abastecimento_atual
-            instance.preco_combustivel = preco_litro
-            instance.total_litros = total_pago / preco_litro if preco_litro > 0 else None
-            instance.total_gasto_abastecimento = total_pago
-            instance.data_abastecimento = data_abastecimento
+        print("inicio calcular diferenca em abastecimentobeahavior")
+        print(f"Veículo consultado: {veiculo}")
+        ultimo_hodometro = Hodometro.objects.filter(veiculo=veiculo).order_by('-id').first()
+        if ultimo_hodometro:
+            ultimo_valor_hodometro = ultimo_hodometro.hodometro
+            print(f"Último registro encontrado: {ultimo_hodometro.id}") 
         else:
-            hodometro_diferenca = abastecimento_atual - ultimo_abastecimento.hodometro
-            total_litros = total_pago / preco_litro if preco_litro > 0 else None
-            preco_combustivel = total_pago / total_litros if total_litros > 0 else None
-            dias_entre_abastecimentos = (data_abastecimento - ultimo_abastecimento.data_abastecimento).days
-            litros_por_dia = total_litros / dias_entre_abastecimentos if dias_entre_abastecimentos > 0 else None
-            km_dia = hodometro_diferenca / dias_entre_abastecimentos if dias_entre_abastecimentos > 0 else None
-            total_gasto_abastecimento = AbastecimentoBehavior.calcular_total_gasto_abastecimento(total_pago, instance.veiculo)
+            ultimo_valor_hodometro = 0
+        print(f"Último hodômetro : {ultimo_valor_hodometro}")
+        print(f"Novo hodômetro: {novo_hodometro}")
+        print(f"Diferença: {novo_hodometro - ultimo_valor_hodometro}")
+        print("fim calcular diferenca em abastecimentobeahavior")
 
-            instance.hodometro = abastecimento_atual
-            instance.hodometro_diferenca = hodometro_diferenca
-            instance.total_litros = total_litros
-            instance.preco_combustivel = preco_combustivel
-            instance.dias_entre_abastecimentos = dias_entre_abastecimentos
-            instance.litros_por_dia = litros_por_dia
-            instance.km_dia = km_dia
-            instance.total_gasto_abastecimento = total_gasto_abastecimento
-            instance.data_abastecimento = data_abastecimento
-        
-        instance.save()
-
-    @staticmethod
-    def sugerir_novo_abastecimento(veiculo):
-        """
-        Sugere um novo abastecimento com base no consumo diário e na capacidade do tanque.
-        """
-        ultimo_abastecimento = AbastecimentoBehavior.obter_ultimo_abastecimento(veiculo)
-        if not ultimo_abastecimento or not ultimo_abastecimento.litros_por_dia:
-            return None
-        
-        capacidade_tanque = veiculo.capacidade_tanque
-        dias_restantes = capacidade_tanque / ultimo_abastecimento.litros_por_dia
-        proximo_abastecimento = ultimo_abastecimento.data_abastecimento + timedelta(days=int(dias_restantes))
-        return proximo_abastecimento
-
-    @staticmethod
-    def atualizar_abastecimento(instance, abastecimento_atual):
-        """
-        Atualiza o registro de abastecimento existente.
-        """
-        if not isinstance(abastecimento_atual, int, float):
-            raise ValueError("O abastecimento atual deve ser um valor inteiro.")
-
-        if abastecimento_atual < instance.abastecimento:
-            raise ValueError("O abastecimento atual não pode ser menor que o valor registrado anteriormente.")
-
-        # Atualiza o abastecimento e calcula a diferença.
-        instance.abastecimento_diferenca = AbastecimentoBehavior.calcular_diferenca(instance.abastecimento, abastecimento_atual)
-        instance.abastecimento = abastecimento_atual
-        instance.save()
-
-    
-    @staticmethod
-    def calcular_diferenca(ultimo_hodometro, penultimo_hodometro):
-        """
-        Calcula a diferença entre os valores de hodômetro de dois registros.
-        """
-        ultimo_hodometro = Decimal(str(ultimo_hodometro)) if not isinstance(ultimo_hodometro, (int, float, Decimal)) else ultimo_hodometro
-        penultimo_hodometro = Decimal(str(penultimo_hodometro)) if not isinstance(penultimo_hodometro, (int, float, Decimal)) else penultimo_hodometro
-
-
-        return ultimo_hodometro - penultimo_hodometro
+        return novo_hodometro - ultimo_valor_hodometro
 
     @staticmethod
     def calcular_preco_total(total_litros, preco_combustivel):
-
+        """
+        Calcula o preço total do abastecimento.
+        """
         if total_litros and preco_combustivel:
             preco_total = total_litros * preco_combustivel
             preco_total = Decimal(preco_total).quantize(Decimal('0.01'), rounding=ROUND_DOWN)
@@ -214,6 +150,42 @@ class AbastecimentoBehavior:
             return preco_total
 
         return Decimal('0.00')
+
+    @staticmethod
+    def calcular_consumo_medio(hodometro_diferenca, veiculo):
+        """Calcula o desempenho do veículo (km/l)."""
+        ultimo_abastecimento = AbastecimentoBehavior.obter_ultimo_abastecimento(veiculo)
+        if not ultimo_abastecimento or not ultimo_abastecimento.total_litros:
+            return None
+
+        try:
+            consumo_medio = hodometro_diferenca / ultimo_abastecimento.total_litros
+            return Decimal(consumo_medio).quantize(Decimal('0.01'))
+        except Exception as e:
+            logging.error(f"Erro ao calcular o consumo médio: {e}")
+            return None
+
+    @staticmethod
+    def calcular_total_gasto_abastecimento(total_pago, veiculo):
+        """
+        Calcula o total gasto com abastecimento.
+        """
+        if not isinstance(veiculo, Veiculo):
+            raise ValueError(f"Erro: veiculo não é um objeto Veiculo. Tipo recebido: {type(veiculo)} - Valor: {veiculo}")
+
+        if not isinstance(total_pago, (Decimal, float, int)):
+            raise ValueError(f"Erro: total_pago deve ser um número. Tipo recebido: {type(total_pago)} - Valor: {total_pago}")
+
+        ultimo_abastecimento = AbastecimentoBehavior.obter_ultimo_abastecimento(veiculo)
+        total_anterior = ultimo_abastecimento.total_gasto_abastecimento if ultimo_abastecimento else Decimal('0.00')
+        return total_anterior + Decimal(str(total_pago))
+
+    @staticmethod
+    def obter_ultimo_abastecimento(veiculo):
+        if not isinstance(veiculo, Veiculo):
+            raise ValueError(f"Erro: veiculo não é um objeto Veiculo. Tipo recebido: {type(veiculo)} - Valor: {veiculo}")
+
+        return Abastecimento.objects.filter(veiculo=veiculo).order_by('-id').first()
 
     @staticmethod
     def calcular_diferenca_dias(data_atual, data_anterior):
@@ -249,52 +221,18 @@ class AbastecimentoBehavior:
         return None  # Retorna None caso qualquer valor seja inválido
 
     @staticmethod
-    def obter_ultimo_abastecimento(veiculo):
-        if not isinstance(veiculo, Veiculo):
-            raise ValueError(f"Erro: veiculo não é um objeto Veiculo. Tipo recebido: {type(veiculo)} - Valor: {veiculo}")
-        
-        return Abastecimento.objects.filter(veiculo=veiculo).order_by('-id').first()
-
-    @staticmethod
-    def calcular_consumo_medio(hodometro_diferenca, veiculo):
+    def sugerir_novo_abastecimento(veiculo):
         """
-        Calcula o consumo médio do veículo (km/l).
+        Sugere um novo abastecimento com base no consumo diário e na capacidade do tanque.
         """
-        # Verifica se veiculo é uma instância de Veiculo
-        if not isinstance(veiculo, Veiculo):
-            raise ValueError(f"Erro: veiculo não é um objeto Veiculo. Tipo recebido: {type(veiculo)} - Valor: {veiculo}")
-
-        # Obtém o último abastecimento
         ultimo_abastecimento = AbastecimentoBehavior.obter_ultimo_abastecimento(veiculo)
-
-        # Verifica se o último abastecimento e o total de litros são válidos
-        if not ultimo_abastecimento or not ultimo_abastecimento.total_litros or ultimo_abastecimento.total_litros <= 0:
-            logger.warning(f"Não foi possível calcular o consumo médio para o veículo ID {veiculo.id} devido a dados insuficientes.")
-            return None  
-
-        # Calcula o consumo médio
-        try:
-            consumo_medio = hodometro_diferenca / ultimo_abastecimento.total_litros
-            logger.debug(f" bahavior - hodometro_diferenca: {hodometro_diferenca}, total_litros: {ultimo_abastecimento.total_litros}, consumo_medio: {consumo_medio}")
-            return consumo_medio
-        except Exception as e:
-            logger.error(f"Erro ao calcular o consumo médio: {e}")
+        if not ultimo_abastecimento or not ultimo_abastecimento.litros_por_dia:
             return None
 
-    @staticmethod
-    def calcular_total_gasto_abastecimento(total_pago, veiculo):
-        """
-        Calcula o total gasto com abastecimento.
-        """
-        if not isinstance(veiculo, Veiculo):
-            raise ValueError(f"Erro: veiculo não é um objeto Veiculo. Tipo recebido: {type(veiculo)} - Valor: {veiculo}")
-
-        if not isinstance(total_pago, (Decimal, float, int)):
-            raise ValueError(f"Erro: total_pago deve ser um número. Tipo recebido: {type(total_pago)} - Valor: {total_pago}")
-
-        ultimo_abastecimento = AbastecimentoBehavior.obter_ultimo_abastecimento(veiculo)
-        total_anterior = ultimo_abastecimento.total_gasto_abastecimento if ultimo_abastecimento else Decimal('0.00')
-        return total_anterior + Decimal(str(total_pago))
+        capacidade_tanque = veiculo.capacidade_tanque
+        dias_restantes = capacidade_tanque / ultimo_abastecimento.litros_por_dia
+        proximo_abastecimento = ultimo_abastecimento.data_abastecimento + timedelta(days=int(dias_restantes))
+        return proximo_abastecimento
 
 class TrocaDeOleoBehavior:
 
@@ -365,3 +303,56 @@ class TrocaDeOleoBehavior:
             data_troca=timezone.now()
         )
         return troca
+
+
+class ServicoBehavior:
+    @staticmethod
+    def verificar_conclusao(servico):
+        """
+        Verifica se um serviço foi concluído.
+        """
+        return servico.concluido
+
+    @staticmethod
+    def agendar_proximo_servico(servico):
+        """
+        Agenda o próximo serviço com base no tipo de serviço e na data de conclusão.
+        """
+        if servico.concluido:
+            if servico.nome == "Troca de Óleo":
+                proxima_data = servico.data_agendamento + timedelta(days=180)  # 6 meses
+                return proxima_data
+            elif servico.nome == "Revisão Geral":
+                proxima_data = servico.data_agendamento + timedelta(days=365)  # 1 ano
+                return proxima_data
+            # Adicione outras lógicas de agendamento conforme necessário
+        return None
+
+    @staticmethod
+    def calcular_custo_total(servico):
+        """
+        Calcula o custo total do serviço, considerando possíveis taxas adicionais.
+        """
+        custo_base = servico.custo or 0  # Se o custo não estiver definido, use 0
+        taxa_adicional = 0.1 * custo_base  # Exemplo: taxa adicional de 10%
+        return custo_base + taxa_adicional
+
+    @staticmethod
+    def enviar_notificacao_agendamento(servico):
+        """
+        Envia uma notificação ao usuário sobre o agendamento do serviço.
+        (Implementação fictícia, você precisará adaptar para o seu sistema de notificação)
+        """
+        usuario = servico.usuario
+        mensagem = f"Seu serviço '{servico.nome}' foi agendado para {servico.data_agendamento}."
+        print(f"Notificação para {usuario.username}: {mensagem}")
+        # Aqui você implementaria a lógica para enviar a notificação (email, push, etc.)
+
+    @staticmethod
+    def registrar_historico_servico(servico):
+        """
+        Registra o histórico do serviço em um log ou tabela de histórico.
+        (Implementação fictícia, você precisará adaptar para o seu sistema de log)
+        """
+        print(f"Histórico: Serviço '{servico.nome}' realizado em {servico.data_agendamento}.")
+        # Aqui você implementaria a lógica para registrar o histórico do serviço
